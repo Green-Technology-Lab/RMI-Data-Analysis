@@ -1,36 +1,51 @@
 clear
 close all
+
+% load the data file
 data = xls2struct('2_28_2019-2_28_2020 Load2.xlsx', 'Sheet1');
+
+% Save the output as...
 outFilename = 'Analyzed Data 2020-11-16-4.xlsx';
-convertTime = 693960;
+
+timestep = 5;  % Minutes (data resolution)
+timestep = 60/timestep; % Factor to convery from kW to kWh.
+
+
+convertTime = 693960;  % Difference between matlab datenum and excel datenum
 Time = datenum(data.Time_Stamp+convertTime); % Convert from Excel to Matlab days
 
+%% Load data from struct into some variables
 % Years=year(datetime(Time,'ConvertFrom','datenum'));
 % Days=day(datetime(Time,'ConvertFrom','datenum'));
 Hours=hour(datetime(Time,'ConvertFrom','datenum'));
 % Months=month(datetime(Time,'ConvertFrom','datenum'));
 Demand = data.Demand; %Building demand
 Daynums=floor(Time);
-NetkWh=data.Net_Demand/12;
+NetkWh=data.Net_Demand/timestep;
 
-demand2 = smoothdata(data.Demand, 'gaussian', 5);
-DemandkWh=demand2/12;
-DemandkWhNoSolar=(Demand-data.Solar)/12;
-BatterykWh=data.Battery/12;
-SolarkWh=data.Solar/12;
+% Optional data filtering
+%demand2 = smoothdata(data.Demand, 'gaussian', 5);
 
+% Convert from kW to kWh.
+DemandkWh=demand2/timestep;
+DemandkWhNoSolar=(Demand-data.Solar)/timestep;
+BatterykWh=data.Battery/timestep;
+SolarkWh=data.Solar/timestep;
 
+% Create a new data array
 DATA=[Time,data.Net_Demand,SolarkWh,BatterykWh,Daynums,Hours,NetkWh,DemandkWh];
 
-count=1;
+count=1;  % Need a seperate index for looped variables because loop index doesn't start at 1.   
 
-% For each day
+%% Calculate peak-time energy metrics for each day
 for i=floor(Time(1)):floor(Time(end))
     
-    [Total_DemandkWh(count,1),Total_NetkWh(count,1),Total_SolarkWh(count,1),Total_BatterykWh(count,1),Demand_tRMDkW(count,1),Batt_tRMDkW(count,1),PV_tRMDkW(count,1), Net_tRMDkW(count,1), HMP(count,1), HMP_Batt(count,1), HMP_PV(count,1), tRMD(count,1), tHMP(count,1), checkRMD(count,1), checkHMP(count,1), dataOK(count,1)]=EnergyvsNetEnergy_loop2(DATA,16,21,i);
+    [Total_DemandkWh(count,1),Total_NetkWh(count,1),Total_SolarkWh(count,1),Total_BatterykWh(count,1),Demand_tRMDkW(count,1),Batt_tRMDkW(count,1),PV_tRMDkW(count,1), Net_tRMDkW(count,1), HMP(count,1), HMP_Batt(count,1), HMP_PV(count,1), tRMD(count,1), tHMP(count,1), checkRMD(count,1), checkHMP(count,1), dataOK(count,1)]=peakCalcs(DATA,16,21,i);
     outDay(count,1) = i-convertTime;  % Convert back to Excel days
     count=count+1;
 end
+
+% Convert to excel time. 
 tRMD = tRMD - convertTime;
 tHMP = tHMP - convertTime;
 
@@ -100,15 +115,11 @@ HMP_PV_avg = mean(HMP_PV(dataOK));
 HMP_PV_std = std(HMP_PV(dataOK));
 
 
-%% Output
-
-%FinalArray=[outDay, Total_DemandkWh,Total_NetkWh,DemandPercent,Total_BatterykWh,BatteryPercent,Total_SolarkWh,SolarPercent,Total_DERkWh,DERkWhPercent,RMD_Batt,RMD_PV,MPDkW_Ren_Percent];
-
-%xlswrite('0FINAL EnergySavedDuringPeak_2_28_19thru2_28_20.xlsx', FinalArray);
-
 %% Save Results to File
 % We can't write headers to excel files with numerics in one go, so have to
-% write it row by row
+% write it row by row. This is slow, sorry. 
+% To improve code running speed, comment out this section and view data in
+% matlab. 
 
 % Generate the header row
 headers = {'Date','Total_DemandkWh','Total_NetkWh','Total_SolarkWh',...
@@ -158,25 +169,9 @@ for i=1:length(outDay)
     str = strcat({'Writing file '}, num2str(progress*100), {'%.'},{' Time Remaining: '}, num2str(eta), {' minutes.'});
     disp(str);
     
+% Optional code to display file writing progress.
 %     progress = i/length(outDay);
 %     str = strcat({'Writing file '}, num2str(progress*100), {'%.'});
 %     disp(str)
     
 end
-
-% X=categorical({'Total Demand kWh','Total Net kWh'});
-% X=reordercats(X,{'Total Demand kWh','Total Net kWh'});
-% DemandComparison=[Total_DemandkWh,Total_NetkWh];
-% 
-% bar(X,DemandComparison)
-% 
-% PercentDifference= (Total_DemandkWh-Total_NetkWh)/Total_DemandkWh
-% 
-figure
-hold on
-plot(Time,data.Demand,'b');
-plot(Time,demand2,'m');
-%plot(Time,NetKW,'b');
-
-legend('Original', 'Filter');
-datetickzoom('x','mm-dd-yyyy HH:MM','keepticks');
