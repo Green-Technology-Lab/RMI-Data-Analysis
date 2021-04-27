@@ -7,6 +7,9 @@ data = xls2struct('RMI Microgrid Load Data.xlsx', 'Sheet1');
 % Save the output as...
 outFilename = 'Analyzed Data.xlsx';
 
+peakStart = 16;  % 24hr, when does peak time start?
+peakEnd = 21;    % 24hr, when does peak time end?
+
 timestep = 5;  % Minutes (data resolution)
 timestep = 60/timestep; % Factor to convery from kW to kWh.
 
@@ -40,7 +43,7 @@ count=1;  % Need a seperate index for looped variables because loop index doesn'
 %% Calculate peak-time energy metrics for each day
 for i=floor(Time(1)):floor(Time(end))
     
-    [Total_DemandkWh(count,1),Total_NetkWh(count,1),Total_SolarkWh(count,1),Total_BatterykWh(count,1),Demand_tRMDkW(count,1),Batt_tRMDkW(count,1),PV_tRMDkW(count,1), Net_tRMDkW(count,1), HMP(count,1), HMP_Batt(count,1), HMP_PV(count,1), tRMD(count,1), tHMP(count,1), checkRMD(count,1), checkHMP(count,1), dataOK(count,1)]=peakCalcs(DATA,16,21,i);
+    [Total_DemandkWh(count,1),Total_NetkWh(count,1),Total_SolarkWh(count,1),Total_BatterykWh(count,1),Demand_tRMDkW(count,1),Batt_tRMDkW(count,1),PV_tRMDkW(count,1), Net_tRMDkW(count,1), HMP(count,1), HMP_Batt(count,1), HMP_PV(count,1), tRMD(count,1), tHMP(count,1), checkRMD(count,1), checkHMP(count,1), dataOK(count,1)]=peakCalcs(DATA,peakStart,peakEnd,i);
     outDay(count,1) = i-convertTime;  % Convert back to Excel days
     count=count+1;
 end
