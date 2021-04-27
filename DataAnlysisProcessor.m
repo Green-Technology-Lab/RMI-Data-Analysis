@@ -2,10 +2,10 @@ clear
 close all
 
 % load the data file
-data = xls2struct('2_28_2019-2_28_2020 Load2.xlsx', 'Sheet1');
+data = xls2struct('RMI Microgrid Load Data.xlsx', 'Sheet1');
 
 % Save the output as...
-outFilename = 'Analyzed Data 2020-11-16-4.xlsx';
+outFilename = 'Analyzed Data.xlsx';
 
 timestep = 5;  % Minutes (data resolution)
 timestep = 60/timestep; % Factor to convery from kW to kWh.
@@ -162,16 +162,11 @@ for i=1:length(outDay)
         HMP_PV_max,HMP_PV_avg,HMP_PV_std,blanks(i), tRMD(i), tHMP(i),...
         checkRMD(i), checkHMP(i), dataOK(i)],1,location);
     
-    
+    % code to display file writing progress.
     dt(i) = now-t;
     progress = i/length(outDay);
     eta = (mean(dt)*(length(outDay)-i)*1E5)/60;
     str = strcat({'Writing file '}, num2str(progress*100), {'%.'},{' Time Remaining: '}, num2str(eta), {' minutes.'});
     disp(str);
-    
-% Optional code to display file writing progress.
-%     progress = i/length(outDay);
-%     str = strcat({'Writing file '}, num2str(progress*100), {'%.'});
-%     disp(str)
-    
+
 end
